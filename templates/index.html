@@ -1,0 +1,61 @@
+<!DOCTYPE HTML>
+<html lang='en'>
+<head>
+	<meta charset='UTF-8'>
+	<title>S3 Example App</title>
+</head>
+<body>
+	<h1>S3 Files</h1>
+	<h2>Upload</h2>
+	<form method='post' enctype='multipart/form-data'>
+		<input type='text' name='title' placeholder='Image Title'>
+		<input type='file' name='image'>
+		<input type='submit' value='Submit'>
+	</form>
+
+	{% if images | count == 0 %}
+
+		<h3>No Images Uploaded</h3>
+
+	{% else %}
+
+		<h3>Your Images</h3>
+		<table>
+			<tbody>
+			{% for image in images %}
+				<tr>
+					<td>
+						<input type='button' value='Delete' onClick='deleteImage("{{ image.filename }}")'>
+					</td>
+					<td>
+						<img src='{{ image.url }}' alt='{{ image.title }}'>
+					</td>
+				</tr>
+			{% endfor %}
+			</tbody>
+		</table>
+
+	{% endif %}
+
+	<script type='text/javascript'>
+
+		function deleteImage(filename) {
+		  var xhttp = new XMLHttpRequest();
+
+		  xhttp.onreadystatechange = function xhttpRequestData() {
+		    if (xhttp.readyState == 4 && xhttp.status == 200) {
+		      var data = JSON.parse(xhttp.responseText);
+		      alert(data.message);
+		      location.reload();
+		    }
+		  };
+
+		  xhttp.open('POST', 'http://localhost:5000/delete' , true);
+		  xhttp.send(filename);
+
+		}
+
+	</script>
+
+</body>
+</html>
