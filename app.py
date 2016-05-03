@@ -5,9 +5,6 @@ from database import db_session
 from models import Image
 
 import boto3
-from boto.s3.key import Key
-from boto3.s3.transfer import S3Transfer
-import botocore
 
 AWS_BUCKET_ID = os.environ['AWS_BUCKET_ID']
 AWS_BUCKET_URL = os.environ['AWS_BUCKET_URL']
@@ -16,32 +13,38 @@ AWS_SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
 
 app = Flask(__name__)
 
-def get_aws_bucket():
+def get_s3_obj():
 	client = boto3.client(
 		's3', 
 		aws_access_key_id=AWS_ACCESS_KEY_ID, 
 		aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
-	return S3Transfer(client)
+	s3 = boto3.resource('s3')
+	return s3
 
 def upload_to_s3(filename, content, mimetype):
-	transfer = get_aws_bucket()
-	transfer.upload_file(
-		content,
-		AWS_BUCKET_ID, 
-		filename,
-		extra_args={'Metadata': {'Content-Type': mimetype},
-					'ACL': 'public-read'}
-	)
-	# key.set_acl('public-read')
+	s3 = get_s3_obj()
+	obj = s3.Object(AWS_BUCKET_ID, filename)
+	response = obj.put(
+		ACL='public-read',
+		Body=content,
+		ContentType=mimetype
+		)
 
 def delete_from_s3(filename):
-	key = get_aws_bucket()
-	key.key = filename
-	key.delete()
+	s3 = get_s3_obj()
+	bucket = s3.Bucket(AWS_BUCKET_ID)
+	response = bucket.delete_objects(
+		Delete={
+			'Objects': [
+				{
+					'Key': filename,
+				}
+			]
+		}
+	)
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-	get_aws_bucket()
 	if request.method == 'POST':
 
 		title = request.form.get('title', '')
