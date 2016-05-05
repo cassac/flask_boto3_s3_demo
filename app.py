@@ -32,19 +32,14 @@ def upload_to_s3(filename, content, mimetype):
 		Body=content,
 		ContentType=mimetype
 		)
-	print response
 	return response
 
-def delete_from_s3(filename):
+def delete_from_s3(keys):
 	s3 = get_s3_obj()
 	bucket = s3.Bucket(AWS_BUCKET_ID)
 	response = bucket.delete_objects(
 		Delete={
-			'Objects': [
-				{
-					'Key': filename,
-				}
-			]
+			'Objects': keys
 		}
 	)
 
@@ -89,14 +84,18 @@ def index():
 	images = Image.query.all()
 	return render_template('index.html', images=images)
 
+def get_key(url):
+	return url.split(AWS_BUCKET_ID)[-1]
+
 @app.route('/delete', methods=['POST'])
 def delete():
 	filename = request.data
 	image = Image.query.filter_by(filename=filename).first()
+	keys = [{'Key': get_key(image.thumb_url) }, {'Key': get_key(image.url) }]
 	message = 'Image deleted'
-
+	
 	try:
-		delete_from_s3(filename)
+		delete_from_s3(keys)
 		db_session.delete(image)
 		db_session.commit()
 	except Exception as e:
