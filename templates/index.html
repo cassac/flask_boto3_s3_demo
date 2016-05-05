@@ -28,6 +28,9 @@
 						<input type='button' value='Delete' onClick='deleteImage("{{ image.filename }}")'>
 					</td>
 					<td>
+						<img src='{{ image.thumb_url }}' alt='{{ image.title }}'>
+					</td>
+					<td>
 						<img src='{{ image.url }}' alt='{{ image.title }}'>
 					</td>
 				</tr>
