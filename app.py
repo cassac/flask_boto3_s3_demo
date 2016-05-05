@@ -1,4 +1,5 @@
 import os
+import mimetypes
 import cStringIO
 from PIL import Image as PIL_Image
 
@@ -31,6 +32,7 @@ def upload_to_s3(filename, content, mimetype):
 		Body=content,
 		ContentType=mimetype
 		)
+	print response
 	return response
 
 def delete_from_s3(filename):
@@ -56,7 +58,6 @@ def thumbnail(file):
 	im.save(memory_file, ext)
 	return memory_file, filename
 
-
 @app.route('/', methods=['GET', 'POST'])
 def index():
 	if request.method == 'POST':
@@ -65,19 +66,21 @@ def index():
 		image = request.files['image']
 		filename = image.filename
 		mimetype = image.mimetype
-		thumbnail_file, thumbnail_filename = thumbnail(image)
 
 		try:
 			upload_to_s3(filename, image, mimetype)
-			# upload_to_s3(thumbnail_filename, thumbnail_file.getvalue(), mimetype)
-			# image = Image(
-			# 	title=title,
-			# 	filename=filename,
-			# 	url=os.path.join(AWS_BUCKET_URL, filename),
-			# 	thumb_url=os.path.join(AWS_BUCKET_URL, thumbnail_filename),
-			# )
-			# db_session.add(image)
-			# db_session.commit()
+			thumbnail_file, thumbnail_filename = thumbnail(image)
+			upload_to_s3(thumbnail_filename, thumbnail_file.getvalue(), mimetype)
+			thumbnail_file.close()
+
+			image = Image(
+				title=title,
+				filename=filename,
+				url=os.path.join(AWS_BUCKET_URL, filename),
+				thumb_url=os.path.join(AWS_BUCKET_URL, thumbnail_filename),
+			)
+			db_session.add(image)
+			db_session.commit()
 		except Exception as e:
 			print e
 
